@@ -272,7 +272,7 @@ BEGIN
 
 		SET v_dt_calc = in_dt_calc;
 
-		CALL calc_ranking_global (v_dt_calc);
+		CALL calc_ranking_global (v_dt_calc,'000');
 
 	END IF;
 
@@ -292,21 +292,21 @@ BEGIN
 				LEAVE loop_time;
 			END IF;	
 
-			CALL calc_ranking_global (v_dt_calc);
+			CALL calc_ranking_global (v_dt_calc,'000');
 
 			SET v_dt_calc = DATE_ADD(v_dt_calc, INTERVAL 1 DAY);
 
 		END LOOP;
 	END IF;
 
-	
+	-- ESTE PROCESO SE EJECUTA SIEMPRE DESDE EL Perdiodic_Process()
 	IF (in_dt_calc = '0000-00-00' AND in_dt_calc_start = '0000-00-00' AND in_dt_calc_end = '0000-00-00') THEN
 
 		BEGIN
 			DECLARE v_dt_score DATE DEFAULT NULL;
 
 			DECLARE v_dates_done INT DEFAULT 0;
-			DECLARE cur_dates CURSOR FOR SELECT distinct(DT_SCORE) FROM HIST_SCORE_GLOBAL WHERE NUM_RANKING_GLOBAL = 0;
+			DECLARE cur_dates CURSOR FOR SELECT MAX(DT_SCORE) FROM HIST_SCORE_GLOBAL WHERE NUM_RANKING_GLOBAL = 0;
 			DECLARE CONTINUE HANDLER FOR NOT FOUND SET v_dates_done = 1;
 
 			SET v_dates_done = 0;
@@ -319,8 +319,16 @@ BEGIN
 				IF v_dates_done THEN
 					LEAVE dates_loop;
 				END IF;
-
-				Call calc_ranking_global (v_dt_score);
+				
+				IF ((DAYOFMONTH(NOW()) % 3) = 1) THEN
+					Call calc_ranking_global (v_dt_score,'019');
+				ELSE
+					IF ((DAYOFMONTH(NOW()) % 3) = 2) THEN
+						Call calc_ranking_global (v_dt_score,'079');
+					ELSE
+						Call calc_ranking_global (v_dt_score,'000');
+					END IF;
+				END IF;
 
 			END LOOP;
 
